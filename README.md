@@ -8,6 +8,7 @@ Admin can edit, delete and add any book. unregisterd users can only brows the we
 ##Tools
 Node.js, Express
 
+
 ### Node
 - #### Node installation on Windows 
  Just go on [official Node.js website](https://nodejs.org/) and download the installer.
@@ -24,3 +25,12 @@ Also, be sure to have `git` available in your PATH, `npm` might need it (You can
 If the installation was successful, you should be able to run the following command.
 
     $ node --version
+
+##  databases that are used:
+
+   ### MongoDB
+   ### Mongoos
+   ### SQL
+   
+  In this project you can choose, to work with SQL or NO SQL . 
+   
