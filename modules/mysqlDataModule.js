@@ -64,7 +64,7 @@ function connect() {
             }
         } else {
             con = mysql.createConnection({
-                multipleStatements:true,
+                multipleStatements: true,
                 host: 'localhost',
                 port: 3306,
                 user: 'root',
@@ -83,16 +83,16 @@ function connect() {
 }
 
 function runQuery(queryString) {
-    return new Promise ((resolve , reject)=>{
-        connect().then(()=>{
-            con.query(queryString , (err , result , fields)=>{
+    return new Promise((resolve, reject) => {
+        connect().then(() => {
+            con.query(queryString, (err, result, fields) => {
                 if (err) {
                     reject(err)
-                }else{
+                } else {
                     resolve(result)
                 }
             })
-        }).catch(error =>{
+        }).catch(error => {
             reject(error)
         })
     })
@@ -104,7 +104,7 @@ function registerUser(email, password) {
     return new Promise((resolve, reject) => {
         runQuery(`INSERT INTO users (email , password) VALUES ('${email}', '${passwordHash.generate(password)}')`).then(() => {
             resolve()
-            
+
         }).catch(error => {
             if (error.errno === 1062) {
                 reject('exist')
@@ -126,11 +126,11 @@ function checkUser(email, password) {
         runQuery(`SELECT * FROM users WHERE email like '${email}'`).then(user => {
             if (user.length === 0) {
                 reject(3)
-                
+
             } else {
-               if (passwordHash.verify(password, user[0].password)) {
-                   user[0]._id = user[0].id
-                   
+                if (passwordHash.verify(password, user[0].password)) {
+                    user[0]._id = user[0].id
+
                     resolve(user[0])
                 } else {
                     reject(3)
@@ -157,8 +157,8 @@ function addBook(bookTitle, bookDescription, bookPdf, bookImg, bookId) {
         runQuery(`SELECT * FROM books WHERE id like '${bookId}' AND WHERE title like '${bookTitle}'`).then((book) => {
             if (book.length === 0) {
                 reject(3)
-                
-            }else{
+
+            } else {
                 const imgArr = []
                 bookImg.forEach((img, idx) => {
                     let ext = img.name.substr(img.name.lastIndexOf('.'))
@@ -167,16 +167,16 @@ function addBook(bookTitle, bookDescription, bookPdf, bookImg, bookId) {
                     imgArr.push('/uploadedFiles/' + newName)
                 });
                 let pdfName = bookTitle.trim().replace(/ /g, '_') + '_' + bookId + '.pdf'
-                    bookPdf.mv('./public/uploadedFiles/' + pdfName)
-                    let pdfNewUrl = '/uploadedFiles/' + pdfName
+                bookPdf.mv('./public/uploadedFiles/' + pdfName)
+                let pdfNewUrl = '/uploadedFiles/' + pdfName
 
-                    runQuery(`INSERT INTO books (title , description , pdfUrl ,userId) VALUES ('${bookTitle}', '${bookDescription}' , '${pdfNewUrl}','${bookId}') ; INSERT INTO imgs (imgUrl , bookid) VALUES ('${imgArr}' , '${bookId}')`).then(()=>{
-                        resolve()
-                    }).catch(err=>{
-                        reject(err)
-                    })
+                runQuery(`INSERT INTO books (title , description , pdfUrl ,userId) VALUES ('${bookTitle}', '${bookDescription}' , '${pdfNewUrl}','${bookId}') ; INSERT INTO imgs (imgUrl , bookid) VALUES ('${imgArr}' , '${bookId}')`).then(() => {
+                    resolve()
+                }).catch(err => {
+                    reject(err)
+                })
 
-            } 
+            }
 
         }).catch(err => {
             reject(err)
@@ -189,29 +189,29 @@ function addBook(bookTitle, bookDescription, bookPdf, bookImg, userid) {
         let pdfName = bookTitle.trim().replace(/ /g, '_') + '_' + userid + '.pdf'
         bookPdf.mv('./public/uploadedFiles/' + pdfName)
         let pdfNewUrl = '/uploadedFiles/' + pdfName
-        runQuery(`INSERT INTO books (title , description , pdfUrl ,userId) VALUES ('${bookTitle}', '${bookDescription}' , '${pdfNewUrl}',${userid})`).then((result)=>{
-            
+        runQuery(`INSERT INTO books (title , description , pdfUrl ,userId) VALUES ('${bookTitle}', '${bookDescription}' , '${pdfNewUrl}',${userid})`).then((result) => {
+
             let saveImg = ''
             bookImg.forEach((img, idx) => {
                 let ext = img.name.substr(img.name.lastIndexOf('.'))
                 let newName = bookTitle.trim().replace(/ /g, '_') + '_' + userid + '_' + idx + ext
                 img.mv('./public/uploadedFiles/' + newName)
                 const imgUrl = '/uploadedFiles/' + newName
-              saveImg += `INSERT INTO imgs (imgUrl , bookid) VALUES ('${imgUrl}' , ${result.insertId});`  //!  ;
+                saveImg += `INSERT INTO imgs (imgUrl , bookid) VALUES ('${imgUrl}' , ${result.insertId});`  //!  ;
             });
-            runQuery(saveImg).then(()=>{
+            runQuery(saveImg).then(() => {
                 resolve()
-            }).catch(err=>{
+            }).catch(err => {
                 reject(err)
             })
-       
-        }).catch(err =>{
+
+        }).catch(err => {
             if (err.errno === 1062) {
                 reject(3)
-            }else{
+            } else {
                 reject(err)
             }
-            
+
         })
     })
 }
@@ -222,10 +222,29 @@ function addBook(bookTitle, bookDescription, bookPdf, bookImg, userid) {
 
 function getAllBooks() {
     return new Promise((resolve, reject) => {
-        runQuery(`SELECT * FROM books `).then((result) => {
-            resolve(result)
-        }).catch(error => {
-            reject(error)
+        runQuery('SELECT books.* , imgs.* FROM books INNER JOIN imgs ON books.id = imgs.bookid').then(results =>{
+            const books = []
+            results.forEach(result =>{
+                // search if the book has been added to books array 
+                let book = books.find(element =>{ element.id = result.bookid})
+                if(book){
+                    // if the book is added before, we need only to append the imgs property with the new imgUrl
+                    book.imgs.push(result.imgUrl)
+                }else{
+                    // if the book is not added to books we need to add it to books and set imgs as new array with one element imgUrl
+                    books.push({
+                        id: result.bookid,
+                        title: result.title,
+                        description: result.description,
+                        pdfUrl: result.pdfUrl,
+                        userid: result.userid,
+                        imgs: [result.imgUrl]
+                    })
+                }
+            })
+            resolve(books)
+        }).catch(err=>{
+            reject(err)
         })
     })
 }
@@ -234,42 +253,64 @@ function getAllBooks() {
 
 function getBook(id) {
     return new Promise((resolve, reject) => {
-        connect().then(() => {
-            Books.findOne({ _id: id }).then(book => {
-                if (book) {
-                    book.id = book._id  // convert it to id
-                    resolve(book)
-                } else {
-                    reject(new Error('can not find book with this id : ' + id))
+            runQuery(`SELECT books.*,imgs.* FROM books INNER JOIN imgs ON imgs.bookid = books.id WHERE imgs.bookid =${id}`).then(results =>{
+                if (results.length) {
+                   const book = {}
+                   results.forEach(result => {
+                       if (book.id) {
+                           book.imgs.push(result.imgUrl)
+                       }else{
+                           book.id = result.bookid
+                           book.title= result.title,
+                           book.description= result.description,
+                           book.pdfUrl= result.pdfUrl,
+                           book.userid= result.userid,
+                           book.imgs= [result.imgUrl]
+                       }
+                       
+                   });
+                   resolve(book)
+                }else{
+                    reject('you can not find book with this id' + id)
                 }
-            }).catch(error => {
-
-                reject(error)
+            }).catch(err =>{
+                reject(err)
             })
-
-        }).catch(error => {
-            reject(error)
-        })
     })
 }
+
+
 
 
 function userBooks(userId) {
     return new Promise((resolve, reject) => {
-        connect().then(() => {
-            Books.find({ userId: userId }).then(findBooks => {
-                findBooks.forEach(book => {
-                    book['id'] = book['_id']  // convert _id to id
-                })
-                resolve(findBooks)
-            }).catch(error => {
-                reject(error)
+        runQuery(`SELECT books.* , imgs.* FROM books INNER JOIN imgs ON books.id = imgs.bookid WHERE books.userid =${userId}`).then(results =>{
+            const books = []
+            results.forEach(result =>{
+                // search if the book has been added to books array 
+                let book = books.find(element =>{ element.id = result.bookid})
+                if(book){
+                    // if the book is added before, we need only to append the imgs property with the new imgUrl
+                    book.imgs.push(result.imgUrl)
+                }else{
+                    // if the book is not added to books we need to add it to books and set imgs as new array with one element imgUrl
+                    books.push({
+                        id: result.bookid,
+                        title: result.title,
+                        description: result.description,
+                        pdfUrl: result.pdfUrl,
+                        userid: result.userid,
+                        imgs: [result.imgUrl]
+                    })
+                }
             })
-        }).catch(error => {
-            reject(error)
+            resolve(books)
+        }).catch(err=>{
+            reject(err)
         })
     })
 }
+
 
 
 function updateBook(bookid, newBookTitle, oldImgsUrl, bookDedcription, newPdfBook, newImgs, userid) {
@@ -297,17 +338,21 @@ function updateBook(bookid, newBookTitle, oldImgsUrl, bookDedcription, newPdfBoo
                     }
                 });
                 // save new images to file system and then arry to be save to db
-                const newImgsUrlsArr = []
+                let newImgsQuery = ''
+                const currentTime = Date.now()
                 newImgs.forEach((img, idx) => {
                     const imgExt = img.name.substr(img.name.lastIndexOf('.'))
                     // set new img name without space  /uploadedFiles/my_book_5464_0.jpg
-                    const newImgName = newBookTitle.trim().replace(/ /g, '_') + '_' + userid + '_' + idx + '_' + (oldBookData.__v + 1) + imgExt
-                    newImgsUrlsArr.push('/uploadedFiles/' + newImgName)
+                    const newImgName = newBookTitle.trim().replace(/ /g, '_') + '_' + userid + '_' + idx + '_' + currentTime + imgExt
+                   const newimgUrl = '/uploadedFiles/' + newImgName //!    SQL
+                    newImgsQuery += `INSERT INTO imgs (imgUrl , bookid) VALUES ('${newimgUrl}' , ${bookid});` //!  SQL INSERT NEW IMG
                     img.mv('./public/uploadedFiles/' + newImgName)  //renaming/moving a  file and update all
                 })
 
                 //delet the old deletedImg from db
+                let deletImgQuery = ''
                 deletedImgs.forEach(file => {
+                    deletImgQuery += `DELETE FROM imgs WHERE imgUrl LIKE  '${file}' AND bookid = ${bookid}; `  //!  SQL DELET
                     if (fs.existsSync('./public' + file)) {  // check if this file exist
                         fs.unlinkSync('./public' + file)   //! delet the old imgs in line 227
                     }
@@ -318,14 +363,10 @@ function updateBook(bookid, newBookTitle, oldImgsUrl, bookDedcription, newPdfBoo
                 if (newPdfBook) {
                     newPdfBook.mv('./public' + oldBookData.pdfUrl)  // replace oldpdf with newpdf
                 }
-                const result = await Books.updateOne({ _id: bookid }, {
-                    title: newBookTitle,
-                    description: bookDedcription,
-                    //pdfUrl >> we replace it in line 262 
-                    imgs: [...keepImgs, ...newImgsUrlsArr],
-                    $inc: { __v: 1 }
-                })
+                //! -------SQL------UPDATE--
+                await runQuery(`UPDATE books SET title = '${newBookTitle}' , description = '${bookDedcription}' WHERE id = ${bookid} ; ` + deletImgQuery + newImgsQuery)
                 resolve()
+                
             })()
         } catch (error) {
             reject(error)
@@ -355,7 +396,7 @@ function dltBook(bookid, userid) {
             } else {
                 reject(new Error('haking try'))
             }
-            Books.deleteOne({ _id: bookid }).then(() => {
+            runQuery(`DELETE FROM books WHERE id = '${bookid}'`).then(() => {
                 resolve()
             }).catch(error => {
                 reject(error)
