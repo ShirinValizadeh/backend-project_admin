@@ -4,9 +4,9 @@
 
 ##Specification
 Admin can :  
-            #1-edit, 
-            #2-delete 
-            #3-add any book.
+            #1-edit,   2-delete ,  3-add any book.
+            
+            
 #unregisterd users can only brows the websiteand show the books details but can not download or upload any book.
 
 ##Tools
