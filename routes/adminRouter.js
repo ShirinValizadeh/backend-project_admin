@@ -5,6 +5,7 @@ const adminRouter = express.Router()
 
 
 adminRouter.use((req , res,next)=> {
+    console.log(req.session.user);
     if (req.session.user) {//!  login to admin muss be login first
         next()
     }else{

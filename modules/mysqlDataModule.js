@@ -5,45 +5,6 @@ const fs = require('fs')
 const { resolve } = require('path')
 
 
-//!4 creat user schema
-/* const userSchema = new Schema({
-    email: {
-        type: String,
-        unique: true,
-        required: true
-    },
-    password: {
-        type: String,
-        required: true
-    }
-}) */
-
-
-
-//! creat books schema
-/* const bookSchema = new Schema({
-    title: {
-        type: String,
-        required: true
-    },
-    description: {
-        type: String
-    },
-    pdfUrl: {
-        type: String,
-        required: true
-    },
-    imgs: {
-        type: [String],
-        required: true,
-        min: 1
-    },
-    userId: {
-        type: String,
-        required: true
-    }
-}) */
-
 
 
 //!1 connect mysql
@@ -64,7 +25,7 @@ function connect() {
             }
         } else {
             con = mysql.createConnection({
-                multipleStatements: true,
+                multipleStatements:true,
                 host: 'localhost',
                 port: 3306,
                 user: 'root',
@@ -83,16 +44,16 @@ function connect() {
 }
 
 function runQuery(queryString) {
-    return new Promise((resolve, reject) => {
-        connect().then(() => {
-            con.query(queryString, (err, result, fields) => {
+    return new Promise ((resolve , reject)=>{
+        connect().then(()=>{
+            con.query(queryString , (err , result , fields)=>{
                 if (err) {
                     reject(err)
-                } else {
+                }else{
                     resolve(result)
                 }
             })
-        }).catch(error => {
+        }).catch(error =>{
             reject(error)
         })
     })
@@ -104,7 +65,7 @@ function registerUser(email, password) {
     return new Promise((resolve, reject) => {
         runQuery(`INSERT INTO users (email , password) VALUES ('${email}', '${passwordHash.generate(password)}')`).then(() => {
             resolve()
-
+            
         }).catch(error => {
             if (error.errno === 1062) {
                 reject('exist')
@@ -126,11 +87,11 @@ function checkUser(email, password) {
         runQuery(`SELECT * FROM users WHERE email like '${email}'`).then(user => {
             if (user.length === 0) {
                 reject(3)
-
+                
             } else {
-                if (passwordHash.verify(password, user[0].password)) {
-                    user[0]._id = user[0].id
-
+               if (passwordHash.verify(password, user[0].password)) {
+                   user[0]._id = user[0].id
+                   
                     resolve(user[0])
                 } else {
                     reject(3)
@@ -147,18 +108,21 @@ function checkUser(email, password) {
 
 
 
+// make title and user id on books table unique together
+// ALTER TABLE books ADD UNIQUE `book_title`(userid, title);
+// make imgUrl and book id in imgs table unique together
+// ALTER TABLE imgs ADD UNIQUE `img_url`(bookid, imgUrl);
 
 
 
-
-
+/* 
 function addBook(bookTitle, bookDescription, bookPdf, bookImg, bookId) {
     return new Promise((resolve, reject) => {
         runQuery(`SELECT * FROM books WHERE id like '${bookId}' AND WHERE title like '${bookTitle}'`).then((book) => {
             if (book.length === 0) {
                 reject(3)
-
-            } else {
+                
+            }else{
                 const imgArr = []
                 bookImg.forEach((img, idx) => {
                     let ext = img.name.substr(img.name.lastIndexOf('.'))
@@ -167,51 +131,51 @@ function addBook(bookTitle, bookDescription, bookPdf, bookImg, bookId) {
                     imgArr.push('/uploadedFiles/' + newName)
                 });
                 let pdfName = bookTitle.trim().replace(/ /g, '_') + '_' + bookId + '.pdf'
-                bookPdf.mv('./public/uploadedFiles/' + pdfName)
-                let pdfNewUrl = '/uploadedFiles/' + pdfName
+                    bookPdf.mv('./public/uploadedFiles/' + pdfName)
+                    let pdfNewUrl = '/uploadedFiles/' + pdfName
 
-                runQuery(`INSERT INTO books (title , description , pdfUrl ,userId) VALUES ('${bookTitle}', '${bookDescription}' , '${pdfNewUrl}','${bookId}') ; INSERT INTO imgs (imgUrl , bookid) VALUES ('${imgArr}' , '${bookId}')`).then(() => {
-                    resolve()
-                }).catch(err => {
-                    reject(err)
-                })
+                    runQuery(`INSERT INTO books (title , description , pdfUrl ,userId) VALUES ('${bookTitle}', '${bookDescription}' , '${pdfNewUrl}','${bookId}') ; INSERT INTO imgs (imgUrl , bookid) VALUES ('${imgArr}' , '${bookId}')`).then(()=>{
+                        resolve()
+                    }).catch(err=>{
+                        reject(err)
+                    })
 
-            }
+            } 
 
         }).catch(err => {
             reject(err)
         })
     })
-}
+} */
 
 function addBook(bookTitle, bookDescription, bookPdf, bookImg, userid) {
     return new Promise((resolve, reject) => {
         let pdfName = bookTitle.trim().replace(/ /g, '_') + '_' + userid + '.pdf'
         bookPdf.mv('./public/uploadedFiles/' + pdfName)
         let pdfNewUrl = '/uploadedFiles/' + pdfName
-        runQuery(`INSERT INTO books (title , description , pdfUrl ,userId) VALUES ('${bookTitle}', '${bookDescription}' , '${pdfNewUrl}',${userid})`).then((result) => {
-
+        runQuery(`INSERT INTO books (title , description , pdfUrl ,userId) VALUES ('${bookTitle}', '${bookDescription}' , '${pdfNewUrl}',${userid})`).then((result)=>{
+            
             let saveImg = ''
             bookImg.forEach((img, idx) => {
                 let ext = img.name.substr(img.name.lastIndexOf('.'))
                 let newName = bookTitle.trim().replace(/ /g, '_') + '_' + userid + '_' + idx + ext
                 img.mv('./public/uploadedFiles/' + newName)
                 const imgUrl = '/uploadedFiles/' + newName
-                saveImg += `INSERT INTO imgs (imgUrl , bookid) VALUES ('${imgUrl}' , ${result.insertId});`  //!  ;
+              saveImg += `INSERT INTO imgs (imgUrl , bookid) VALUES ('${imgUrl}' , ${result.insertId});`  //!  ;
             });
-            runQuery(saveImg).then(() => {
+            runQuery(saveImg).then(()=>{
                 resolve()
-            }).catch(err => {
+            }).catch(err=>{
                 reject(err)
             })
-
-        }).catch(err => {
+       
+        }).catch(err =>{
             if (err.errno === 1062) {
                 reject(3)
-            } else {
+            }else{
                 reject(err)
             }
-
+            
         })
     })
 }
@@ -251,6 +215,8 @@ function getAllBooks() {
 
 
 
+
+
 function getBook(id) {
     return new Promise((resolve, reject) => {
             runQuery(`SELECT books.*,imgs.* FROM books INNER JOIN imgs ON imgs.bookid = books.id WHERE imgs.bookid =${id}`).then(results =>{
@@ -278,7 +244,6 @@ function getBook(id) {
             })
     })
 }
-
 
 
 
@@ -310,7 +275,6 @@ function userBooks(userId) {
         })
     })
 }
-
 
 
 function updateBook(bookid, newBookTitle, oldImgsUrl, bookDedcription, newPdfBook, newImgs, userid) {
@@ -376,7 +340,6 @@ function updateBook(bookid, newBookTitle, oldImgsUrl, bookDedcription, newPdfBoo
 }
 
 
-
 function dltBook(bookid, userid) {
     return new Promise((resolve, reject) => {
 
@@ -409,7 +372,6 @@ function dltBook(bookid, userid) {
 
     })
 }
-
 
 
 module.exports = { registerUser, checkUser, addBook, getAllBooks, getBook, userBooks, updateBook, dltBook }

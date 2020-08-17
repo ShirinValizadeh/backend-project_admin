@@ -102,8 +102,6 @@ function registerUser(email, password) {
 
 
 
-
-
 //! checkuser mongoose
 function checkUser(email, password) {
     return new Promise((resolve, reject) => {
