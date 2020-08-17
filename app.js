@@ -80,7 +80,7 @@ app.get('/register', (req, res) => {
 //post app.post
 
 app.post('/register', (req, res) => {
-  console.log(req.body);
+ // console.log(req.body);
 
   const password = req.body.password
   const email = req.body.email.trim()
