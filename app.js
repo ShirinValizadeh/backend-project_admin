@@ -4,8 +4,8 @@ let fs = require('fs');  //1
 const fileUpload = require('express-fileupload')
 const session = require('express-session')
 const cookie = require('cookie-parser')
-//const dataModules = require('./modules/mongooseDataModule')
-const dataModules = require('./modules/mysqlDataModule')
+const dataModules = require('./modules/mongooseDataModule')
+//const dataModules = require('./modules/mysqlDataModule')
 const adminRouter = require('./routes/adminRouter')
 //const auth = require('./routes/auth')
 
