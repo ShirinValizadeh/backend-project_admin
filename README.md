@@ -1,6 +1,6 @@
 # backend-project
 ##Description
-   it is a store that users needto sign up to be allowed to download or upload pdf books.
+   it is a store that users need to sign up to be allowed to download or upload pdf books.
 
 ##Specification
 Admin can :  
@@ -37,4 +37,5 @@ If the installation was successful, you should be able to run the following comm
    ### SQL
    
   In this project you can choose, to work with SQL or NO SQL . 
+  
    
